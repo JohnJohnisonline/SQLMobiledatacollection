@@ -13,13 +13,18 @@ var drawnItems = L.featureGroup().addTo(map);
 var tableData = L.layerGroup().addTo(map);
 var url = "https://gisdb.xyz/sql?q=";
 // change the Query below by replacing lab_7_name with your table name
-var sqlQuery = "SELECT geom, description, name FROM john_table";
+var sqlQuery = "SELECT geom, description, name, views, accessibility, parking, Distance_Mainroad FROM scenery_table";
 function addPopup(feature, layer) {
     layer.bindPopup(
-        "<b>" + feature.properties.name + "</b><br>" +
-        feature.properties.description
+        "<b>" + "Username: " + feature.properties.name + "</b><br>" +
+        "Description: " + feature.properties.description + "</b><br>" +
+        "Views: " + feature.properties.views + "</b><br>" +
+        "ADA accessibility: " + feature.properties.accessibility + "</b><br>" +
+        "Parking Spots Available: " + feature.properties.parking + "</b><br>" +
+        "Distance from main roads: " + feature.properties.Distance_Mainroad + " miles" + "</b>"
     );
 }
+
 
 fetch(url + sqlQuery)
     .then(function(response) {
@@ -45,11 +50,30 @@ new L.Control.Draw({
 
 function createFormPopup() {
     var popupContent =
-        '<form>' +
-        'Description:<br><input type="text" id="input_desc"><br>' +
-        'User\'s Name:<br><input type="text" id="input_name"><br>' +
-        '<input type="button" value="Submit" id="submit">' +
-        '</form>'
+    '<form>' +
+    'Description:<br><input type="text" id="input_desc"><br>' +
+    'User\'s Name:<br><input type="text" id="input_name"><br>' +
+    'Views:<br>' +
+    '<select id="input_views">' +
+    '<option value="City lights">City lights</option>' +
+    '<option value="Water Bodies">Water Bodies</option>' +
+    '<option value="Nature">Nature</option>' +
+    '<option value="Hikes">Hikes</option>' +
+    '<option value="Other">Other</option>' +
+    '</select><br>' +
+    'ADA accessibility:<br>' +
+    '<input type="radio" id="input_ada_accessibility_yes" name="ada_accessibility" value="Accessible">' +
+    '<label for="input_ada_accessibility_yes">Accessible</label><br>' +
+    '<input type="radio" id="input_ada_accessibility_no" name="ada_accessibility" value="Not Accessible">' +
+    '<label for="input_ada_accessibility_no">Not Accessible</label><br>' +
+    'Parking Availability:<br>' +
+    '<input type="text" id="input_parking" placeholder="Enter number of available parking spots"><br>' +
+    '<small>Please enter the number of available parking spots. If there is no parking available, please enter 0.</small><br>' +
+    'Distance from main roads:<br>' +
+    '<input type="text" id="input_distance" placeholder="Enter distance in miles"><br>' +
+    '<small>Please enter the distance in miles from the nearest main road to the location.</small><br>' +
+    '<input type="button" value="Submit" id="submit">' +
+    '</form>'
     drawnItems.bindPopup(popupContent).openPopup();
 }
 
@@ -65,6 +89,10 @@ function setData(e) {
         // Get user name and description
         var enteredUsername = document.getElementById("input_name").value;
         var enteredDescription = document.getElementById("input_desc").value;
+        var selectedViews = document.getElementById('input_views').value;
+        var adaAccessibility = document.querySelector('input[name="ada_accessibility"]:checked').value;
+        var parking = document.getElementById('input_parking').value;
+        var Distance_Mainroad = document.getElementById('input_distance').value;
 
            	// For each drawn layer
         drawnItems.eachLayer(function(layer) {
@@ -72,11 +100,9 @@ function setData(e) {
         // Create SQL expression to insert layer
         var drawing = JSON.stringify(layer.toGeoJSON().geometry);
         var sql =
-            "INSERT INTO john_table (geom, name, description) " +
-            "VALUES (ST_SetSRID(ST_GeomFromGeoJSON('" +
-            drawing + "'), 4326), '" +
-            enteredUsername + "', '" +
-            enteredDescription + "');";
+        "INSERT INTO scenery_table (geom, name, description, views, accessibility, parking, Distance_Mainroad) " +
+        "VALUES (ST_SetSRID(ST_GeomFromGeoJSON('" + drawing + "'), 4326), " +
+        "'" + enteredUsername + "', '" + enteredDescription + "', '" + selectedViews + "', '" + adaAccessibility + "', '" + parking + "', '" + Distance_Mainroad + "')";
         console.log(sql);
 
         // Send the data
@@ -102,6 +128,10 @@ function setData(e) {
     var newData = layer.toGeoJSON();
     newData.properties.description = enteredDescription;
     newData.properties.name = enteredUsername;
+    newData.properties.views = selectedViews;
+    newData.properties.accessibility = adaAccessibility;
+    newData.properties.parking = parking;
+    newData.properties.Distance_Mainroad = Distance_Mainroad;
     L.geoJSON(newData, {onEachFeature: addPopup}).addTo(tableData);
 
 });
